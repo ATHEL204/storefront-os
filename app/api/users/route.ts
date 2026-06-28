@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role, emailVerified: user.emailVerified, createdAt: user.createdAt },
-    stats: { totalPosts: posts.length, totalViews: posts.reduce((s, p) => s + p.views, 0), categories: [...new Set(posts.map(p => p.category))].length },
+    stats: { totalPosts: posts.length, totalViews: posts.reduce((s, p) => s + p.views, 0), categories: [Array.from(new Set(posts.map(p => p.category)))].length },
   })
 }
 
