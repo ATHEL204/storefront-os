@@ -37,8 +37,8 @@ if (store.posts.size === 0) SEED.forEach(p => store.posts.set(p.id, p))
 
 export const db = {
   createUser: (u: User) => { store.users.set(u.id, u); return u },
-  getUserById: (id: string) => store.users.get(id) || null,
-  getUserByEmail: (email: string) => [...store.users.values()].find(u => u.email === email.toLowerCase()) || null,
+  getUserById: (id: string) => store.users.get(Array.from(store.users.values())id) || null,
+  getUserByEmail: (email: string) => .find(u => u.email === email.toLowerCase()) || null,
   updateUser: (id: string, fields: Partial<User>) => {
     const u = store.users.get(id); if (!u) return null
     const updated = { ...u, ...fields }; store.users.set(id, updated); return updated
