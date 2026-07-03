@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
+    "downlevelIteration": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "ignoreDeprecations": "6.0",
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
