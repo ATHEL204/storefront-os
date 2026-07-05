@@ -30,7 +30,7 @@ function LoginForm() {
 
   return (
     <div className="login-grid">
-      <style jsx>{`
+      <style>{`
         .login-grid {
           display: grid;
           grid-template-columns: 1fr 480px;
@@ -49,6 +49,9 @@ function LoginForm() {
           .login-right {
             padding: 32px 20px !important;
             min-height: 100vh;
+          }
+          .login-mobile-brand {
+            display: flex !important;
           }
         }
       `}</style>
@@ -92,13 +95,6 @@ function LoginForm() {
             <span style={{ width:6, height:6, background:'var(--electric)', borderRadius:'50%', display:'inline-block' }} />
             STOREFRONT OS
           </div>
-          <style jsx>{`
-            @media (max-width: 860px) {
-              .login-mobile-brand {
-                display: flex !important;
-              }
-            }
-          `}</style>
           <div style={{ fontFamily:'var(--mono)', fontSize:9, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:20, height:1, background:'var(--text-muted)', display:'inline-block' }} />
             Merchant Access
