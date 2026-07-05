@@ -27,41 +27,48 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      if (!user.email) return false
+      try {
+        if (!user.email) return false
 
-      let dbUser = await db.getUserByEmail(user.email)
+        let dbUser = await db.getUserByEmail(user.email)
 
-      if (!dbUser) {
-        // With the adapter in place NextAuth will normally have already
-        // created the user row itself, but we guard here in case this
-        // runs before that (e.g. first Google sign-in).
-        dbUser = await db.createUser({
-          email: user.email.toLowerCase(),
-          name: user.name || user.email.split('@')[0],
-          avatar: user.image || undefined,
-          role: 'merchant',
-          emailVerified: account?.provider === 'google',
-        })
-      } else {
-        await db.updateUser(dbUser.id, {
-          avatar: user.image || dbUser.avatar,
-          emailVerified: dbUser.emailVerified || account?.provider === 'google',
-        })
+        if (!dbUser) {
+          dbUser = await db.createUser({
+            email: user.email.toLowerCase(),
+            name: user.name || user.email.split('@')[0],
+            avatar: user.image || undefined,
+            role: 'merchant',
+            emailVerified: account?.provider === 'google',
+          })
+        } else {
+          await db.updateUser(dbUser.id, {
+            avatar: user.image || dbUser.avatar,
+            emailVerified: dbUser.emailVerified || account?.provider === 'google',
+          })
+        }
+
+        return true
+      } catch (err) {
+        console.error('AUTH_SIGNIN_ERROR', err)
+        return false
       }
-
-      return true
     },
 
     async jwt({ token, user }) {
-      if (user?.email) {
-        const dbUser = await db.getUserByEmail(user.email)
-        if (dbUser) {
-          token.id = dbUser.id
-          token.role = dbUser.role
-          token.emailVerified = dbUser.emailVerified
+      try {
+        if (user?.email) {
+          const dbUser = await db.getUserByEmail(user.email)
+          if (dbUser) {
+            token.id = dbUser.id
+            token.role = dbUser.role
+            token.emailVerified = dbUser.emailVerified
+          }
         }
+        return token
+      } catch (err) {
+        console.error('AUTH_JWT_ERROR', err)
+        return token
       }
-      return token
     },
 
     async session({ session, token }) {
@@ -82,4 +89,5 @@ export const authOptions: NextAuthOptions = {
 
   session: { strategy: 'jwt' },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true, // TEMP: remove once magic link + Google are both confirmed working
 }
