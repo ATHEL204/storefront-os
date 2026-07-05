@@ -1,0 +1,113 @@
+// Prisma schema for storefront-os
+// Uses Vercel Postgres (Postgres under the hood).
+// Run `npx prisma generate` after installing deps, and
+// `npx prisma db push` to create these tables in your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // POSTGRES_PRISMA_URL = pooled connection (use for the app at runtime)
+  url       = env("POSTGRES_PRISMA_URL")
+  // POSTGRES_URL_NON_POOLING = direct connection (needed for migrations)
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ---------- NextAuth required models ----------
+// Field/model names follow the @next-auth/prisma-adapter convention.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- App models ----------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  // NextAuth's Prisma adapter reads/writes this as a Date (set the moment
+  // the address is verified) rather than a plain boolean — don't change
+  // the type or the adapter will crash.
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("merchant") // 'merchant' | 'admin'
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+  posts    Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  category     String // 'dev' | 'design' | 'engineer' | 'video' | '3d' | 'other'
+  images       String[] @default([])
+  link         String   @default("")
+  rate         String   @default("")
+  rateType     String   @default("hourly") // 'hourly' | 'project' | 'open' | 'hide'
+  authorId     String
+  authorName   String
+  authorRole   String
+  authorAvatar String?
+  createdAt    DateTime @default(now())
+  views        Int      @default(0)
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("posts")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  postId     String
+  fromName   String
+  fromEmail  String
+  message    String
+  budget     String?
+  toAuthorId String
+  createdAt  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}

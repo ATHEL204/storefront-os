@@ -1,10 +1,15 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import EmailProvider from 'next-auth/providers/email'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import { prisma } from './prisma'
 import { db } from './db'
-import { v4 as uuid } from 'uuid'
 
 export const authOptions: NextAuthOptions = {
+  // Required so the Email (magic link) provider has somewhere to store
+  // verification tokens. Also lets Google-linked accounts persist properly.
+  adapter: PrismaAdapter(prisma),
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -24,20 +29,21 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (!user.email) return false
 
-      let dbUser = db.getUserByEmail(user.email)
+      let dbUser = await db.getUserByEmail(user.email)
 
       if (!dbUser) {
-        dbUser = db.createUser({
-          id: uuid(),
+        // With the adapter in place NextAuth will normally have already
+        // created the user row itself, but we guard here in case this
+        // runs before that (e.g. first Google sign-in).
+        dbUser = await db.createUser({
           email: user.email.toLowerCase(),
           name: user.name || user.email.split('@')[0],
           avatar: user.image || undefined,
           role: 'merchant',
           emailVerified: account?.provider === 'google',
-          createdAt: new Date().toISOString(),
         })
       } else {
-        db.updateUser(dbUser.id, {
+        await db.updateUser(dbUser.id, {
           avatar: user.image || dbUser.avatar,
           emailVerified: dbUser.emailVerified || account?.provider === 'google',
         })
@@ -48,7 +54,7 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user }) {
       if (user?.email) {
-        const dbUser = db.getUserByEmail(user.email)
+        const dbUser = await db.getUserByEmail(user.email)
         if (dbUser) {
           token.id = dbUser.id
           token.role = dbUser.role

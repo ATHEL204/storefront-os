@@ -1,7 +1,9 @@
+import { prisma } from './prisma'
+
 export interface User {
   id: string; email: string; name: string; avatar?: string
   role: 'merchant' | 'admin'; emailVerified: boolean
-  verifyToken?: string; verifyTokenExp?: string; createdAt: string
+  createdAt: string
 }
 
 export interface Post {
@@ -18,43 +20,145 @@ export interface Message {
   message: string; budget?: string; toAuthorId: string; createdAt: string
 }
 
-const store = {
-  users: new Map<string, User>(),
-  posts: new Map<string, Post>(),
-  messages: new Map<string, Message>(),
+function toUser(u: any): User {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name || u.email.split('@')[0],
+    avatar: u.image || undefined,
+    role: u.role,
+    // Prisma/NextAuth store this as a DateTime (or null); our app-facing
+    // type just wants a boolean.
+    emailVerified: !!u.emailVerified,
+    createdAt: u.createdAt.toISOString(),
+  }
 }
 
-const SEED: Post[] = [
-  { id:'post-001', title:'Full-Stack E-Commerce Platform', description:'Multi-vendor marketplace with Node.js, React, Stripe. 10k+ daily transactions with real-time inventory.', category:'dev', images:[], link:'https://github.com/ATHEL204', rate:'$85', rateType:'hourly', authorId:'s1', authorName:'ATHEL204', authorRole:'Full-Stack Developer', createdAt:new Date(Date.now()-7200000).toISOString(), views:142 },
-  { id:'post-002', title:'Brand Identity — Lagos Streetwear', description:'Complete brand system: logo, palette, typography, packaging for an independent fashion label.', category:'design', images:[], link:'https://behance.net', rate:'Open to offers', rateType:'open', authorId:'s2', authorName:'Amara D.', authorRole:'Brand Designer', createdAt:new Date(Date.now()-18000000).toISOString(), views:89 },
-  { id:'post-003', title:'Mechanical Engineering CAD Models', description:'Precision CAD for industrial components. SolidWorks / AutoCAD. Available for freelance.', category:'engineer', images:[], link:'', rate:'$60', rateType:'hourly', authorId:'s3', authorName:'Kofi A.', authorRole:'Mechanical Engineer', createdAt:new Date(Date.now()-28800000).toISOString(), views:54 },
-  { id:'post-004', title:'Cinematic Brand Video Production', description:'Short-form brand videos, product showcases, social content. 4K equipment, colour grading included.', category:'video', images:[], link:'https://youtube.com', rate:'$500', rateType:'project', authorId:'s4', authorName:'Maya R.', authorRole:'Videographer', createdAt:new Date(Date.now()-43200000).toISOString(), views:201 },
-  { id:'post-005', title:'Blender 3D Characters & Environments', description:'Game-ready 3D assets, character rigs, environment design. Unreal Engine 5 compatible.', category:'3d', images:[], link:'https://artstation.com', rate:'$75', rateType:'hourly', authorId:'s5', authorName:'Yuki T.', authorRole:'3D Artist', createdAt:new Date(Date.now()-64800000).toISOString(), views:178 },
-  { id:'post-006', title:'Web3 Smart Contract Development', description:'Solidity contracts, DeFi protocol integration, on-chain analytics dashboards. Base & Ethereum.', category:'dev', images:[], link:'https://github.com', rate:'$120', rateType:'hourly', authorId:'s6', authorName:'James O.', authorRole:'Web3 Developer', createdAt:new Date(Date.now()-86400000).toISOString(), views:312 },
-]
-
-if (store.posts.size === 0) SEED.forEach(p => store.posts.set(p.id, p))
+function toPost(p: any): Post {
+  return {
+    id: p.id,
+    title: p.title,
+    description: p.description,
+    category: p.category,
+    images: p.images,
+    link: p.link,
+    rate: p.rate,
+    rateType: p.rateType,
+    authorId: p.authorId,
+    authorName: p.authorName,
+    authorRole: p.authorRole,
+    authorAvatar: p.authorAvatar || undefined,
+    createdAt: p.createdAt.toISOString(),
+    views: p.views,
+  }
+}
 
 export const db = {
-  createUser: (u: User) => { store.users.set(u.id, u); return u },
- getUserById: (id: string) => store.users.get(id) || null,
- getUserByEmail: (email: string) => [...store.users.values()].find(u => u.email === email.toLowerCase()) || null,
-  updateUser: (id: string, fields: Partial<User>) => {
-    const u = store.users.get(id); if (!u) return null
-    const updated = { ...u, ...fields }; store.users.set(id, updated); return updated
+  createUser: async (u: {
+    id?: string; email: string; name?: string; avatar?: string
+    role?: 'merchant' | 'admin'; emailVerified?: boolean; createdAt?: string
+  }) => {
+    const created = await prisma.user.create({
+      data: {
+        email: u.email.toLowerCase(),
+        name: u.name,
+        image: u.avatar,
+        role: u.role || 'merchant',
+        emailVerified: u.emailVerified ? new Date() : null,
+      },
+    })
+    return toUser(created)
   },
-  getAllPosts: (category?: string) => {
-    const posts = [...store.posts.values()].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    return category ? posts.filter(p => p.category === category) : posts
+
+  getUserById: async (id: string) => {
+    const u = await prisma.user.findUnique({ where: { id } })
+    return u ? toUser(u) : null
   },
-  getPostById: (id: string) => store.posts.get(id) || null,
-  createPost: (p: Post) => { store.posts.set(p.id, p); return p },
-  deletePost: (id: string) => store.posts.delete(id),
-  getPostsByAuthor: (authorId: string) => [...store.posts.values()].filter(p => p.authorId === authorId),
-  incrementViews: (id: string) => { const p = store.posts.get(id); if(p) store.posts.set(id,{...p,views:p.views+1}) },
-  createMessage: (m: Message) => { store.messages.set(m.id, m); return m },
-  getStats: () => {
-    const posts = [...store.posts.values()]
-    return { totalPosts: posts.length, totalCreators: new Set(posts.map(p=>p.authorId)).size, totalCategories: new Set(posts.map(p=>p.category)).size }
+
+  getUserByEmail: async (email: string) => {
+    const u = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+    return u ? toUser(u) : null
+  },
+
+  updateUser: async (id: string, fields: Partial<Omit<User, 'id' | 'email'>>) => {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        name: fields.name,
+        image: fields.avatar,
+        role: fields.role,
+        emailVerified:
+          fields.emailVerified === undefined ? undefined : fields.emailVerified ? new Date() : null,
+      },
+    })
+    return toUser(updated)
+  },
+
+  getAllPosts: async (category?: string) => {
+    const posts = await prisma.post.findMany({
+      where: category ? { category } : undefined,
+      orderBy: { createdAt: 'desc' },
+    })
+    return posts.map(toPost)
+  },
+
+  getPostById: async (id: string) => {
+    const p = await prisma.post.findUnique({ where: { id } })
+    return p ? toPost(p) : null
+  },
+
+  createPost: async (p: Omit<Post, 'createdAt' | 'views'> & { createdAt?: string; views?: number }) => {
+    const created = await prisma.post.create({
+      data: {
+        title: p.title,
+        description: p.description,
+        category: p.category,
+        images: p.images,
+        link: p.link,
+        rate: p.rate,
+        rateType: p.rateType,
+        authorId: p.authorId,
+        authorName: p.authorName,
+        authorRole: p.authorRole,
+        authorAvatar: p.authorAvatar,
+      },
+    })
+    return toPost(created)
+  },
+
+  deletePost: async (id: string) => {
+    await prisma.post.delete({ where: { id } }).catch(() => null)
+  },
+
+  getPostsByAuthor: async (authorId: string) => {
+    const posts = await prisma.post.findMany({ where: { authorId } })
+    return posts.map(toPost)
+  },
+
+  incrementViews: async (id: string) => {
+    await prisma.post.update({ where: { id }, data: { views: { increment: 1 } } }).catch(() => null)
+  },
+
+  createMessage: async (m: Omit<Message, 'createdAt'> & { createdAt?: string }) => {
+    const created = await prisma.message.create({
+      data: {
+        postId: m.postId,
+        fromName: m.fromName,
+        fromEmail: m.fromEmail,
+        message: m.message,
+        budget: m.budget,
+        toAuthorId: m.toAuthorId,
+      },
+    })
+    return created
+  },
+
+  getStats: async () => {
+    const posts = await prisma.post.findMany({ select: { authorId: true, category: true } })
+    return {
+      totalPosts: posts.length,
+      totalCreators: new Set(posts.map(p => p.authorId)).size,
+      totalCategories: new Set(posts.map(p => p.category)).size,
+    }
   },
 }

@@ -6,8 +6,8 @@ import { v4 as uuid } from 'uuid'
 
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') || undefined
-  const posts = db.getAllPosts(category)
-  return NextResponse.json({ ok: true, data: posts, stats: db.getStats() })
+  const posts = await db.getAllPosts(category)
+  return NextResponse.json({ ok: true, data: posts, stats: await db.getStats() })
 }
 
 export async function POST(req: NextRequest) {
@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'title, description and category are required' }, { status: 400 })
   }
 
-  const user = db.getUserByEmail(session.user.email)
+  const user = await db.getUserByEmail(session.user.email)
   const CATEGORIES: Record<string, string> = {
     dev: 'Full-Stack Developer', design: 'Designer',
     engineer: 'Engineer', video: 'Videographer', '3d': '3D Artist', other: 'Creative'
   }
 
-  const post = db.createPost({
+  const post = await db.createPost({
     id: 'post-' + uuid().slice(0, 8),
     title, description, category, images: images || [],
     link: link || '', rate: rate || '',

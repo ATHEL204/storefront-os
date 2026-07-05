@@ -8,9 +8,9 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.email) {
     return NextResponse.json({ ok: false, error: 'Authentication required' }, { status: 401 })
   }
-  const user = db.getUserByEmail(session.user.email)
+  const user = await db.getUserByEmail(session.user.email)
   if (!user) return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 })
-  const posts = db.getPostsByAuthor(user.id)
+  const posts = await db.getPostsByAuthor(user.id)
   return NextResponse.json({
     ok: true,
     user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role, emailVerified: user.emailVerified, createdAt: user.createdAt },
@@ -22,8 +22,8 @@ export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) return NextResponse.json({ ok: false, error: 'Auth required' }, { status: 401 })
   const { name } = await req.json()
-  const user = db.getUserByEmail(session.user.email)
+  const user = await db.getUserByEmail(session.user.email)
   if (!user) return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 })
-  const updated = db.updateUser(user.id, { name: name || user.name })
+  const updated = await db.updateUser(user.id, { name: name || user.name })
   return NextResponse.json({ ok: true, user: updated })
 }

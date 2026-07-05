@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Missing required fields' }, { status: 400 })
   }
 
-  const post = db.getPostById(postId)
+  const post = await db.getPostById(postId)
   if (!post) return NextResponse.json({ ok: false, error: 'Post not found' }, { status: 404 })
 
-  db.createMessage({
+  await db.createMessage({
     id: uuid(), postId, fromName, fromEmail, message,
     budget: budget || undefined,
     toAuthorId: post.authorId,
