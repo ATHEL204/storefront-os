@@ -29,10 +29,32 @@ function LoginForm() {
   }
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 480px', minHeight:'100vh' }}>
+    <div className="login-grid">
+      <style jsx>{`
+        .login-grid {
+          display: grid;
+          grid-template-columns: 1fr 480px;
+          min-height: 100vh;
+        }
+        .login-left {
+          display: flex;
+        }
+        @media (max-width: 860px) {
+          .login-grid {
+            grid-template-columns: 1fr;
+          }
+          .login-left {
+            display: none;
+          }
+          .login-right {
+            padding: 32px 20px !important;
+            min-height: 100vh;
+          }
+        }
+      `}</style>
 
       {/* Left panel */}
-      <div style={{ background:'linear-gradient(160deg,#0a0d14,#080A0E)', padding:60, display:'flex', flexDirection:'column', justifyContent:'space-between', borderRight:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
+      <div className="login-left" style={{ background:'linear-gradient(160deg,#0a0d14,#080A0E)', padding:60, flexDirection:'column', justifyContent:'space-between', borderRight:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:-200, left:-200, width:600, height:600, background:'radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%)', pointerEvents:'none' }} />
         <div style={{ fontFamily:'var(--display)', fontSize:22, letterSpacing:4, color:'var(--gold)', display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ width:6, height:6, background:'var(--electric)', borderRadius:'50%', display:'inline-block' }} />
@@ -64,8 +86,19 @@ function LoginForm() {
       </div>
 
       {/* Right panel */}
-      <div style={{ background:'var(--bg-card)', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 40px' }}>
+      <div className="login-right" style={{ background:'var(--bg-card)', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 40px' }}>
         <div style={{ width:'100%', maxWidth:360 }}>
+          <div className="login-mobile-brand" style={{ display:'none', fontFamily:'var(--display)', fontSize:18, letterSpacing:4, color:'var(--gold)', alignItems:'center', gap:8, marginBottom:32 }}>
+            <span style={{ width:6, height:6, background:'var(--electric)', borderRadius:'50%', display:'inline-block' }} />
+            STOREFRONT OS
+          </div>
+          <style jsx>{`
+            @media (max-width: 860px) {
+              .login-mobile-brand {
+                display: flex !important;
+              }
+            }
+          `}</style>
           <div style={{ fontFamily:'var(--mono)', fontSize:9, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:20, height:1, background:'var(--text-muted)', display:'inline-block' }} />
             Merchant Access
