@@ -8,11 +8,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // POSTGRES_PRISMA_URL = pooled connection (use for the app at runtime)
-  url       = env("POSTGRES_PRISMA_URL")
-  // POSTGRES_URL_NON_POOLING = direct connection (needed for migrations)
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ---------- NextAuth required models ----------
