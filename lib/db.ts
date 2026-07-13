@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+export type { Post, User, Account, Session, Message } from '@prisma/client'
 
 export const db = {
   // --- Users ---
