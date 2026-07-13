@@ -1,15 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import EmailProvider from 'next-auth/providers/email'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from './prisma'
-import { db } from './db'
 
 export const authOptions: NextAuthOptions = {
-  // Required so the Email (magic link) provider has somewhere to store
-  // verification tokens. Also lets Google-linked accounts persist properly.
   adapter: PrismaAdapter(prisma),
-
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -19,64 +15,42 @@ export const authOptions: NextAuthOptions = {
     EmailProvider({
       server: {
         host: 'smtp.gmail.com',
-        port: 587,
+        port: 465,
+        secure: true, // port 465 requires secure:true; port 587 would use secure:false + STARTTLS
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       },
-      from: process.env.EMAIL_FROM,
+      // Gmail requires the "from" address to match the authenticated SMTP_USER,
+      // otherwise it silently drops or bounces the message.
+      from: process.env.SMTP_USER,
+      async sendVerificationRequest({ identifier, url, provider }) {
+        const nodemailer = require('nodemailer')
+        const transport = nodemailer.createTransport(provider.server)
+        try {
+          await transport.sendMail({
+            to: identifier,
+            from: provider.from,
+            subject: 'Sign in to STOREFRONT OS',
+            text: `Sign in: ${url}`,
+            html: `<p>Click below to sign in:</p><p><a href="${url}">${url}</a></p>`,
+          })
+        } catch (err) {
+          console.error('MAGIC LINK SEND FAILED:', err)
+          throw new Error('Failed to send verification email')
+        }
+      },
     }),
   ],
 
+  // With PrismaAdapter + a real database, we can switch to database-backed
+  // sessions instead of JWT. This means sessions persist server-side and
+  // survive across serverless instances reliably.
+  session: { strategy: 'database' },
+
   callbacks: {
-    async signIn({ user, account }) {
-      try {
-        if (!user.email) return false
-
-        let dbUser = await db.getUserByEmail(user.email)
-
-        if (!dbUser) {
-          dbUser = await db.createUser({
-            email: user.email.toLowerCase(),
-            name: user.name || user.email.split('@')[0],
-            avatar: user.image || undefined,
-            role: 'merchant',
-            emailVerified: account?.provider === 'google',
-          })
-        } else {
-          await db.updateUser(dbUser.id, {
-            avatar: user.image || dbUser.avatar,
-            emailVerified: dbUser.emailVerified || account?.provider === 'google',
-          })
-        }
-
-        return true
-      } catch (err) {
-        console.error('AUTH_SIGNIN_ERROR', err)
-        return false
-      }
-    },
-
-    async jwt({ token, user }) {
-      try {
-        if (user?.email) {
-          const dbUser = await db.getUserByEmail(user.email)
-          if (dbUser) {
-            token.id = dbUser.id
-            token.role = dbUser.role
-            token.emailVerified = dbUser.emailVerified
-          }
-        }
-        return token
-      } catch (err) {
-        console.error('AUTH_JWT_ERROR', err)
-        return token
-      }
-    },
-
-    async session({ session, token }) {
+    async session({ session, user }) {
       if (session.user) {
-        (session.user as any).id = token.id
-        ;(session.user as any).role = token.role
-        ;(session.user as any).emailVerified = token.emailVerified
+        (session.user as any).id = user.id
+        ;(session.user as any).role = (user as any).role
       }
       return session
     },
@@ -88,7 +62,5 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
 
-  session: { strategy: 'jwt' },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // TEMP: remove once magic link + Google are both confirmed working
 }

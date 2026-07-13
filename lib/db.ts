@@ -1,164 +1,49 @@
 import { prisma } from './prisma'
 
-export interface User {
-  id: string; email: string; name: string; avatar?: string
-  role: 'merchant' | 'admin'; emailVerified: boolean
-  createdAt: string
-}
-
-export interface Post {
-  id: string; title: string; description: string
-  category: 'dev' | 'design' | 'engineer' | 'video' | '3d' | 'other'
-  images: string[]; link: string; rate: string
-  rateType: 'hourly' | 'project' | 'open' | 'hide'
-  authorId: string; authorName: string; authorRole: string
-  authorAvatar?: string; createdAt: string; views: number
-}
-
-export interface Message {
-  id: string; postId: string; fromName: string; fromEmail: string
-  message: string; budget?: string; toAuthorId: string; createdAt: string
-}
-
-function toUser(u: any): User {
-  return {
-    id: u.id,
-    email: u.email,
-    name: u.name || u.email.split('@')[0],
-    avatar: u.image || undefined,
-    role: u.role,
-    // Prisma/NextAuth store this as a DateTime (or null); our app-facing
-    // type just wants a boolean.
-    emailVerified: !!u.emailVerified,
-    createdAt: u.createdAt.toISOString(),
-  }
-}
-
-function toPost(p: any): Post {
-  return {
-    id: p.id,
-    title: p.title,
-    description: p.description,
-    category: p.category,
-    images: p.images,
-    link: p.link,
-    rate: p.rate,
-    rateType: p.rateType,
-    authorId: p.authorId,
-    authorName: p.authorName,
-    authorRole: p.authorRole,
-    authorAvatar: p.authorAvatar || undefined,
-    createdAt: p.createdAt.toISOString(),
-    views: p.views,
-  }
-}
-
 export const db = {
-  createUser: async (u: {
-    id?: string; email: string; name?: string; avatar?: string
-    role?: 'merchant' | 'admin'; emailVerified?: boolean; createdAt?: string
-  }) => {
-    const created = await prisma.user.create({
-      data: {
-        email: u.email.toLowerCase(),
-        name: u.name,
-        image: u.avatar,
-        role: u.role || 'merchant',
-        emailVerified: u.emailVerified ? new Date() : null,
-      },
-    })
-    return toUser(created)
-  },
+  // --- Users ---
+  createUser: (u: { id?: string; email: string; name?: string; image?: string }) =>
+    prisma.user.create({ data: u }),
 
-  getUserById: async (id: string) => {
-    const u = await prisma.user.findUnique({ where: { id } })
-    return u ? toUser(u) : null
-  },
+  getUserById: (id: string) => prisma.user.findUnique({ where: { id } }),
 
-  getUserByEmail: async (email: string) => {
-    const u = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
-    return u ? toUser(u) : null
-  },
+  getUserByEmail: (email: string) =>
+    prisma.user.findUnique({ where: { email: email.toLowerCase() } }),
 
-  updateUser: async (id: string, fields: Partial<Omit<User, 'id' | 'email'>>) => {
-    const updated = await prisma.user.update({
-      where: { id },
-      data: {
-        name: fields.name,
-        image: fields.avatar,
-        role: fields.role,
-        emailVerified:
-          fields.emailVerified === undefined ? undefined : fields.emailVerified ? new Date() : null,
-      },
-    })
-    return toUser(updated)
-  },
+  updateUser: (id: string, fields: Record<string, any>) =>
+    prisma.user.update({ where: { id }, data: fields }),
 
-  getAllPosts: async (category?: string) => {
-    const posts = await prisma.post.findMany({
+  // --- Posts ---
+  getAllPosts: (category?: string) =>
+    prisma.post.findMany({
       where: category ? { category } : undefined,
       orderBy: { createdAt: 'desc' },
-    })
-    return posts.map(toPost)
-  },
+    }),
 
-  getPostById: async (id: string) => {
-    const p = await prisma.post.findUnique({ where: { id } })
-    return p ? toPost(p) : null
-  },
+  getPostsByAuthor: (authorId: string) =>
+    prisma.post.findMany({
+      where: { authorId },
+      orderBy: { createdAt: 'desc' },
+    }),
 
-  createPost: async (p: Omit<Post, 'createdAt' | 'views'> & { createdAt?: string; views?: number }) => {
-    const created = await prisma.post.create({
-      data: {
-        title: p.title,
-        description: p.description,
-        category: p.category,
-        images: p.images,
-        link: p.link,
-        rate: p.rate,
-        rateType: p.rateType,
-        authorId: p.authorId,
-        authorName: p.authorName,
-        authorRole: p.authorRole,
-        authorAvatar: p.authorAvatar,
-      },
-    })
-    return toPost(created)
-  },
+  getPostById: (id: string) => prisma.post.findUnique({ where: { id } }),
 
-  deletePost: async (id: string) => {
-    await prisma.post.delete({ where: { id } }).catch(() => null)
-  },
+  createPost: (p: any) => prisma.post.create({ data: p }),
 
-  getPostsByAuthor: async (authorId: string) => {
-    const posts = await prisma.post.findMany({ where: { authorId } })
-    return posts.map(toPost)
-  },
+  updatePost: (id: string, fields: Record<string, any>) =>
+    prisma.post.update({ where: { id }, data: fields }),
 
-  incrementViews: async (id: string) => {
-    await prisma.post.update({ where: { id }, data: { views: { increment: 1 } } }).catch(() => null)
-  },
+  deletePost: (id: string) => prisma.post.delete({ where: { id } }),
 
-  createMessage: async (m: Omit<Message, 'createdAt'> & { createdAt?: string }) => {
-    const created = await prisma.message.create({
-      data: {
-        postId: m.postId,
-        fromName: m.fromName,
-        fromEmail: m.fromEmail,
-        message: m.message,
-        budget: m.budget,
-        toAuthorId: m.toAuthorId,
-      },
-    })
-    return created
-  },
+  incrementViews: (id: string) =>
+    prisma.post.update({ where: { id }, data: { views: { increment: 1 } } }),
 
-  getStats: async () => {
-    const posts = await prisma.post.findMany({ select: { authorId: true, category: true } })
-    return {
-      totalPosts: posts.length,
-      totalCreators: new Set(posts.map(p => p.authorId)).size,
-      totalCategories: new Set(posts.map(p => p.category)).size,
-    }
-  },
+  // --- Messages ---
+  createMessage: (m: any) => prisma.message.create({ data: m }),
+
+  getMessagesForUser: (authorId: string) =>
+    prisma.message.findMany({
+      where: { toAuthorId: authorId },
+      orderBy: { createdAt: 'desc' },
+    }),
 }

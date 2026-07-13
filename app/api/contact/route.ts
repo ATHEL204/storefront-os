@@ -23,18 +23,17 @@ export async function POST(req: NextRequest) {
     id: uuid(), postId, fromName, fromEmail, message,
     budget: budget || undefined,
     toAuthorId: post.authorId,
-    createdAt: new Date().toISOString(),
   })
 
   // Send email if SMTP is configured
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com', port: 587, secure: false,
+        host: 'smtp.gmail.com', port: 465, secure: true,
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       })
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: process.env.SMTP_USER,
         to: process.env.SMTP_USER, // In production, look up author's email
         subject: `New inquiry about: ${post.title}`,
         text: `From: ${fromName} <${fromEmail}>\nPost: ${post.title}\nBudget: ${budget || 'Not specified'}\n\n${message}`,

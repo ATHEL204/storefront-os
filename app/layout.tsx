@@ -1,15 +1,10 @@
-import type { Metadata, Viewport } from 'next'
+import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
   title: 'STOREFRONT OS — Portfolio Platform',
   description: 'Discover developers, designers, engineers and creators. Post your work. Get hired.',
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
   const posts = await db.getPostsByAuthor(user.id)
   return NextResponse.json({
     ok: true,
-    user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, role: user.role, emailVerified: user.emailVerified, createdAt: user.createdAt },
-    stats: { totalPosts: posts.length, totalViews: posts.reduce((s, p) => s + p.views, 0), categories: [Array.from(new Set(posts.map(p => p.category)))].length },
+    user: { id: user.id, email: user.email, name: user.name, avatar: user.image, role: (user as any).role, emailVerified: user.emailVerified, createdAt: (user as any).createdAt },
+    stats: { totalPosts: posts.length, totalViews: posts.reduce((s, p) => s + p.views, 0), categories: [...new Set(posts.map(p => p.category))].length },
   })
 }
 
