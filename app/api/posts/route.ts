@@ -7,7 +7,12 @@ import { v4 as uuid } from 'uuid'
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') || undefined
   const posts = await db.getAllPosts(category)
-  return NextResponse.json({ ok: true, data: posts })
+  const stats = {
+    totalPosts: posts.length,
+    totalCreators: new Set(posts.map(p => p.authorId)).size,
+    totalCategories: new Set(posts.map(p => p.category)).size,
+  }
+  return NextResponse.json({ ok: true, data: posts, stats })
 }
 
 export async function POST(req: NextRequest) {
