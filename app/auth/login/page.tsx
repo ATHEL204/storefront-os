@@ -56,18 +56,19 @@ function LoginForm() {
         }
       `}</style>
 
-      {/* Left panel */}
-      <div className="login-left" style={{ background:'linear-gradient(160deg,#0a0d14,#080A0E)', padding:60, flexDirection:'column', justifyContent:'space-between', borderRight:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
+      {/* Left panel — intentionally always dark, regardless of site theme,
+          so its text colors are hardcoded rather than using var(--text) etc. */}
+      <div className="login-left" style={{ background:'linear-gradient(160deg,#0a0d14,#080A0E)', padding:60, flexDirection:'column', justifyContent:'space-between', borderRight:'1px solid rgba(255,255,255,0.06)', position:'relative', overflow:'hidden', color:'#F0EDE6' }}>
         <div style={{ position:'absolute', top:-200, left:-200, width:600, height:600, background:'radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%)', pointerEvents:'none' }} />
-        <div style={{ fontFamily:'var(--display)', fontSize:22, letterSpacing:4, color:'var(--gold)', display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ width:6, height:6, background:'var(--electric)', borderRadius:'50%', display:'inline-block' }} />
+        <div style={{ fontFamily:'var(--display)', fontSize:22, letterSpacing:4, color:'#C9A84C', display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ width:6, height:6, background:'#00E5FF', borderRadius:'50%', display:'inline-block' }} />
           STOREFRONT OS
         </div>
         <div>
-          <h1 style={{ fontFamily:'var(--display)', fontSize:'clamp(56px,7vw,88px)', lineHeight:.9, letterSpacing:3, marginBottom:20 }}>
-            SHOW YOUR<br/><span style={{ color:'var(--gold)' }}>WORK.</span><br/>GET HIRED.
+          <h1 style={{ fontFamily:'var(--display)', fontSize:'clamp(56px,7vw,88px)', lineHeight:.9, letterSpacing:3, marginBottom:20, color:'#F0EDE6' }}>
+            SHOW YOUR<br/><span style={{ color:'#C9A84C' }}>WORK.</span><br/>GET HIRED.
           </h1>
-          <p style={{ color:'var(--text-dim)', fontSize:15, lineHeight:1.7, maxWidth:380 }}>
+          <p style={{ color:'#8B929E', fontSize:15, lineHeight:1.7, maxWidth:380 }}>
             The portfolio platform for developers, designers, engineers and creators.
           </p>
         </div>
@@ -78,10 +79,10 @@ function LoginForm() {
             { icon:'💬', title:'Get hired directly', desc:'Clients message you through the platform' },
           ].map(f => (
             <div key={f.title} style={{ display:'flex', alignItems:'center', gap:14 }}>
-              <div style={{ width:36, height:36, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--r)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{f.icon}</div>
+              <div style={{ width:36, height:36, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{f.icon}</div>
               <div>
-                <div style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{f.title}</div>
-                <div style={{ fontSize:12, color:'var(--text-dim)' }}>{f.desc}</div>
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:2, color:'#F0EDE6' }}>{f.title}</div>
+                <div style={{ fontSize:12, color:'#8B929E' }}>{f.desc}</div>
               </div>
             </div>
           ))}

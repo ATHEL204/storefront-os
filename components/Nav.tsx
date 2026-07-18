@@ -3,12 +3,10 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useTheme } from '@/lib/theme'
 
 export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
   const { data: session } = useSession()
-  const { theme, toggleTheme } = useTheme()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
     <nav className="site-nav">
@@ -24,23 +22,12 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         <span className="nav-browse-text">Browse Talent</span>
       </Link>
 
-      {/* Desktop-only right-side actions */}
+      {/* Desktop-only right-side actions — Dashboard/Post Work stay exactly here */}
       <div className="nav-desktop-actions">
-        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle light/dark theme">
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
         {session ? (
           <>
             <Link href="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
             <button className="btn btn-gold btn-sm" onClick={onPostClick}>+ Post Work</button>
-            <Link href="/dashboard" className="nav-avatar-link">
-              {session.user?.image
-                ? <Image src={session.user.image} alt="avatar" width={32} height={32} style={{ borderRadius:'50%', border:'1.5px solid var(--border-gold)' }} />
-                : <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--bg-elevated)', border:'1.5px solid var(--border-gold)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--display)', fontSize:14, color:'var(--gold)' }}>
-                    {(session.user?.name || 'U')[0].toUpperCase()}
-                  </div>
-                }
-            </Link>
           </>
         ) : (
           <>
@@ -50,37 +37,62 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         )}
       </div>
 
-      {/* Column 3 (mobile only): hamburger / avatar trigger */}
-      <button className="nav-mobile-trigger" onClick={() => setMenuOpen(v => !v)} aria-label="Menu">
-        {session?.user?.image
-          ? <Image src={session.user.image} alt="avatar" width={30} height={30} style={{ borderRadius:'50%', border:'1.5px solid var(--border-gold)' }} />
-          : <span style={{ fontSize:20 }}>{menuOpen ? '✕' : '☰'}</span>
-        }
+      {/* Hamburger — opens the side drawer, visible on both desktop and mobile */}
+      <button className="nav-hamburger" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
+        <span className="hamburger-line" />
       </button>
 
-      {/* Mobile dropdown menu */}
-      {menuOpen && (
-        <div className="nav-mobile-menu">
-          <button className="nav-mobile-item" onClick={() => { toggleTheme(); }}>
-            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
-          </button>
-          {session ? (
-            <>
-              <div className="nav-mobile-user">
-                <div style={{ fontSize:13, fontWeight:600 }}>{session.user?.name}</div>
-                <div style={{ fontFamily:'var(--mono)', fontSize:10, color:'var(--text-muted)' }}>{session.user?.email}</div>
+      {/* Side drawer */}
+      {drawerOpen && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />
+          <div className="drawer">
+            <div className="drawer-top">
+              <span style={{ fontFamily:'var(--mono)', fontSize:10, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)' }}>Menu</span>
+              <button className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
+            </div>
+
+            {session && (
+              <div className="drawer-user">
+                {session.user?.image
+                  ? <Image src={session.user.image} alt="avatar" width={40} height={40} style={{ borderRadius:'50%', border:'1.5px solid var(--border-gold)' }} />
+                  : <div style={{ width:40, height:40, borderRadius:'50%', background:'var(--bg-elevated)', border:'1.5px solid var(--border-gold)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--display)', fontSize:16, color:'var(--gold)' }}>
+                      {(session.user?.name || 'U')[0].toUpperCase()}
+                    </div>
+                }
+                <div>
+                  <div style={{ fontSize:14, fontWeight:600 }}>{session.user?.name}</div>
+                  <div style={{ fontFamily:'var(--mono)', fontSize:10, color:'var(--text-muted)' }}>{session.user?.email}</div>
+                </div>
               </div>
-              <Link href="/dashboard" className="nav-mobile-item" onClick={() => setMenuOpen(false)}>📊 Dashboard</Link>
-              <button className="nav-mobile-item" onClick={() => { setMenuOpen(false); onPostClick?.() }}>✦ Post Work</button>
-              <button className="nav-mobile-item" style={{ color:'var(--red)' }} onClick={() => signOut({ callbackUrl:'/' })}>→ Sign Out</button>
-            </>
-          ) : (
-            <>
-              <Link href="/auth/login" className="nav-mobile-item" onClick={() => setMenuOpen(false)}>Sign In</Link>
-              <Link href="/auth/login" className="nav-mobile-item" style={{ color:'var(--gold)' }} onClick={() => setMenuOpen(false)}>Get Started →</Link>
-            </>
-          )}
-        </div>
+            )}
+
+            <div className="drawer-links">
+              {/* These duplicate the desktop buttons but only actually show on mobile,
+                  since Dashboard/Post Work already have dedicated buttons on desktop. */}
+              {session && (
+                <>
+                  <Link href="/dashboard" className="drawer-item drawer-item-mobile-only" onClick={() => setDrawerOpen(false)}>📊 Dashboard</Link>
+                  <button className="drawer-item drawer-item-mobile-only" onClick={() => { setDrawerOpen(false); onPostClick?.() }}>✦ Post Work</button>
+                </>
+              )}
+
+              {session ? (
+                <>
+                  <Link href="/settings" className="drawer-item" onClick={() => setDrawerOpen(false)}>⚙️ Settings</Link>
+                  <button className="drawer-item" style={{ color:'var(--red)' }} onClick={() => signOut({ callbackUrl:'/' })}>→ Sign Out</button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="drawer-item" onClick={() => setDrawerOpen(false)}>Sign In</Link>
+                  <Link href="/auth/login" className="drawer-item" style={{ color:'var(--gold)' }} onClick={() => setDrawerOpen(false)}>Get Started →</Link>
+                </>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       <style>{`
@@ -95,24 +107,50 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         .nav-logo { display:flex; align-items:center; gap:8px; font-family:var(--display); font-size:20px; letter-spacing:3px; color:var(--gold); }
         .nav-dot { width:6px; height:6px; background:var(--electric); border-radius:50%; display:inline-block; animation: blink 2s infinite; }
         .nav-browse { display:none; }
-        .nav-mobile-trigger { display:none; }
-        .nav-mobile-menu { display:none; }
 
-        .theme-toggle {
-          width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+        .nav-desktop-actions { display:flex; align-items:center; gap:10px; }
+
+        .nav-hamburger {
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+          width:36px; height:36px; margin-left:10px;
           background: var(--bg-elevated); border:1px solid var(--border); border-radius:var(--r);
-          font-size:14px; cursor:pointer; transition: all .2s;
+          cursor:pointer;
         }
-        .theme-toggle:hover { border-color: var(--border-gold); }
+        .hamburger-line { width:16px; height:1.5px; background:var(--text); display:block; }
 
-        /* Desktop: this bug caused the avatar to wrap onto its own line before —
-           the container needs an explicit flex display, not just a hide-on-mobile rule. */
-        .nav-desktop-actions {
-          display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;
+        .drawer-backdrop {
+          position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1998;
+          animation: fade-in .2s ease;
         }
-        .nav-avatar-link { display:flex; align-items:center; }
+        @keyframes fade-in { from{opacity:0} to{opacity:1} }
+        @keyframes slide-in { from{ transform:translateX(100%) } to{ transform:translateX(0) } }
 
-        /* Desktop: show a Browse Talent link inline with actions */
+        .drawer {
+          position:fixed; top:0; right:0; bottom:0; width:300px; max-width:85vw; z-index:1999;
+          background: var(--bg-2); border-left:1px solid var(--border);
+          display:flex; flex-direction:column; padding:20px;
+          animation: slide-in .25s var(--ease);
+        }
+        .drawer-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .drawer-close {
+          width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+          background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--r);
+          color:var(--text-dim); cursor:pointer;
+        }
+        .drawer-user {
+          display:flex; align-items:center; gap:12px; padding:14px;
+          background: var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
+          margin-bottom:16px;
+        }
+        .drawer-links { display:flex; flex-direction:column; gap:4px; }
+        .drawer-item {
+          display:block; width:100%; text-align:left; padding:12px 14px; background:none; border:none;
+          color:var(--text); font-family:var(--body); font-size:14px; border-radius:var(--r); cursor:pointer;
+        }
+        .drawer-item:hover { background: var(--bg-elevated); }
+        .drawer-item-mobile-only { display:none; }
+
+        /* Desktop: show Browse Talent link inline */
         @media (min-width: 769px) {
           .nav-browse {
             display: flex; align-items:center; gap:6px;
@@ -122,7 +160,7 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
           .nav-browse:hover { color: var(--gold); }
         }
 
-        /* Mobile: 3-column layout — logo | browse talent | menu trigger */
+        /* Mobile: 3-column layout — logo | browse talent | hamburger */
         @media (max-width: 768px) {
           .site-nav { padding: 0 16px; display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; }
           .nav-logo-text { display:none; }
@@ -132,22 +170,8 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
             font-family: var(--mono); font-size:9px; letter-spacing:.5px; text-transform:uppercase; color:var(--text-dim);
           }
           .nav-browse-icon { font-size:16px; }
-          .nav-mobile-trigger {
-            display:flex; align-items:center; justify-content:center; justify-self:end;
-            width:36px; height:36px; background:none; border:1px solid var(--border); border-radius:var(--r);
-            color:var(--text); cursor:pointer;
-          }
-          .nav-mobile-menu {
-            display:flex; flex-direction:column; position:fixed; top:64px; left:0; right:0;
-            background: rgba(8,10,14,0.98); backdrop-filter: blur(20px); border-bottom:1px solid var(--border);
-            padding: 8px; gap:2px; z-index:999;
-          }
-          .nav-mobile-user { padding:12px 14px; border-bottom:1px solid var(--border); margin-bottom:6px; }
-          .nav-mobile-item {
-            display:block; width:100%; text-align:left; padding:12px 14px; background:none; border:none;
-            color:var(--text); font-family:var(--body); font-size:14px; border-radius:var(--r); cursor:pointer;
-          }
-          .nav-mobile-item:hover { background: var(--bg-elevated); }
+          .nav-hamburger { justify-self:end; margin-left:0; }
+          .drawer-item-mobile-only { display:block; }
         }
       `}</style>
     </nav>
