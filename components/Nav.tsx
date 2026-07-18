@@ -3,9 +3,11 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useTheme } from '@/lib/theme'
 
 export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
   const { data: session } = useSession()
+  const { theme, toggleTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
@@ -16,7 +18,7 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         <span className="nav-logo-text">STOREFRONT OS</span>
       </Link>
 
-      {/* Column 2 (mobile) / middle links (desktop): Browse Talent */}
+      {/* Column 2 (mobile) / middle link (desktop): Browse Talent */}
       <Link href="/#explore" className="nav-browse">
         <span className="nav-browse-icon">🔍</span>
         <span className="nav-browse-text">Browse Talent</span>
@@ -24,11 +26,14 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
 
       {/* Desktop-only right-side actions */}
       <div className="nav-desktop-actions">
+        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle light/dark theme">
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
         {session ? (
           <>
             <Link href="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
             <button className="btn btn-gold btn-sm" onClick={onPostClick}>+ Post Work</button>
-            <Link href="/dashboard" style={{ display:'flex', alignItems:'center' }}>
+            <Link href="/dashboard" className="nav-avatar-link">
               {session.user?.image
                 ? <Image src={session.user.image} alt="avatar" width={32} height={32} style={{ borderRadius:'50%', border:'1.5px solid var(--border-gold)' }} />
                 : <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--bg-elevated)', border:'1.5px solid var(--border-gold)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--display)', fontSize:14, color:'var(--gold)' }}>
@@ -56,6 +61,9 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="nav-mobile-menu">
+          <button className="nav-mobile-item" onClick={() => { toggleTheme(); }}>
+            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
           {session ? (
             <>
               <div className="nav-mobile-user">
@@ -79,7 +87,7 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
 
         .site-nav {
-          position: fixed; top:0; left:0; right:0; z-index:1000; height:64;
+          position: fixed; top:0; left:0; right:0; z-index:1000; height:64px;
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 40px; background: rgba(8,10,14,0.9);
           backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
@@ -89,6 +97,20 @@ export default function Nav({ onPostClick }: { onPostClick?: () => void }) {
         .nav-browse { display:none; }
         .nav-mobile-trigger { display:none; }
         .nav-mobile-menu { display:none; }
+
+        .theme-toggle {
+          width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+          background: var(--bg-elevated); border:1px solid var(--border); border-radius:var(--r);
+          font-size:14px; cursor:pointer; transition: all .2s;
+        }
+        .theme-toggle:hover { border-color: var(--border-gold); }
+
+        /* Desktop: this bug caused the avatar to wrap onto its own line before —
+           the container needs an explicit flex display, not just a hide-on-mobile rule. */
+        .nav-desktop-actions {
+          display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;
+        }
+        .nav-avatar-link { display:flex; align-items:center; }
 
         /* Desktop: show a Browse Talent link inline with actions */
         @media (min-width: 769px) {

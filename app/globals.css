@@ -31,6 +31,30 @@
   --ease:         cubic-bezier(0.4,0,0.2,1);
 }
 
+/* ── LIGHT THEME ──────────────────────────
+   Overrides the same custom properties used everywhere else in the app,
+   so every component that reads var(--bg), var(--text), etc. via inline
+   styles automatically re-themes without needing per-component changes. */
+:root[data-theme="light"] {
+  --bg:           #FAF8F4;
+  --bg-2:         #F2EFE8;
+  --bg-card:      #FFFFFF;
+  --bg-elevated:  #F0EDE4;
+  --gold:         #A8842E;
+  --gold-dim:     rgba(168,132,46,0.10);
+  --electric:     #0086A8;
+  --green:        #0B8F4F;
+  --red:          #C7274A;
+  --purple:       #6B3FD4;
+  --orange:       #C4650F;
+  --pink:         #C0356F;
+  --text:         #1A1815;
+  --text-dim:     #5C5A54;
+  --text-muted:   #8C8A82;
+  --border:       rgba(0,0,0,0.08);
+  --border-gold:  rgba(168,132,46,0.3);
+}
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
@@ -41,6 +65,7 @@ body {
   font-size: 15px;
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color .25s var(--ease), color .25s var(--ease);
 }
 
 img { max-width: 100%; display: block; }
