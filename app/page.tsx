@@ -4,9 +4,12 @@ import Nav from '@/components/Nav'
 import PostCard from '@/components/PostCard'
 import CreatePostModal from '@/components/CreatePostModal'
 import ContactModal from '@/components/ContactModal'
+import OrderModal from '@/components/OrderModal'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import ErrorState from '@/components/ErrorState'
-import { Post } from '@/lib/db'
+import { Post, GigPackage } from '@/lib/db'
+
+type PostWithPackages = Post & { packages?: GigPackage[] }
 
 const CATS = [
   { id:'all',      label:'All Work',   icon:'✦' },
@@ -18,12 +21,13 @@ const CATS = [
   { id:'other',    label:'Other',      icon:'✦' },
 ]
 export default function Home() {
-  const [allPosts, setAllPosts] = useState<Post[]>([])
+  const [allPosts, setAllPosts] = useState<PostWithPackages[]>([])
   const [stats, setStats] = useState({ totalPosts:0, totalCreators:0, totalCategories:0 })
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
-  const [contactPost, setContactPost] = useState<Post|null>(null)
+  const [contactPost, setContactPost] = useState<PostWithPackages|null>(null)
+  const [orderPost, setOrderPost] = useState<PostWithPackages|null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -33,7 +37,7 @@ export default function Home() {
       const res = await fetch('/api/posts')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
-      if (data.ok) { setAllPosts(data.data); setStats(data.stats) }
+      if (data.ok) { setAllPosts(data.data); setStats(data.stats || { totalPosts: data.data.length, totalCreators: 0, totalCategories: 0 }) }
     } catch (e) {
       setError('Could not load posts. Please check your connection.')
     } finally {
@@ -160,7 +164,7 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20, marginTop:8 }}>
-                {posts.map(post => <PostCard key={post.id} post={post} onContact={handleContact} />)}
+                {posts.map(post => <PostCard key={post.id} post={post} onContact={handleContact} onOrder={setOrderPost} />)}
               </div>
             )}
           </div>
@@ -222,6 +226,9 @@ export default function Home() {
 
       {showCreate && <CreatePostModal onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); fetchPosts() }} />}
       {contactPost && <ContactModal post={contactPost} onClose={() => setContactPost(null)} />}
+      {orderPost && orderPost.packages && (
+        <OrderModal postTitle={orderPost.title} packages={orderPost.packages} onClose={() => setOrderPost(null)} />
+      )}
     </>
   )
 }

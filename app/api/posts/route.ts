@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { title, description, category, images, link, rate, rateType } = body
+  const { title, description, category, images, link, rate, rateType, packages } = body
 
   if (!title || !description || !category) {
     return NextResponse.json({ ok: false, error: 'title, description and category are required' }, { status: 400 })
@@ -52,6 +52,23 @@ export async function POST(req: NextRequest) {
     authorRole: CATEGORIES[category] || 'Creative',
     authorAvatar: session.user.image || undefined,
   })
+
+  // packages: [{ tier: 'basic', title, description, price (dollars), deliveryDays, revisions }, ...]
+  // Price arrives in whole dollars from the form; Stripe and our schema store cents.
+  if (Array.isArray(packages) && packages.length > 0) {
+    const validTiers = ['basic', 'standard', 'premium']
+    const cleaned = packages
+      .filter(p => p?.title && p?.price)
+      .map(p => ({
+        tier: validTiers.includes(p.tier) ? p.tier : 'basic',
+        title: p.title,
+        description: p.description || '',
+        price: Math.round(Number(p.price) * 100),
+        deliveryDays: Number(p.deliveryDays) || 3,
+        revisions: Number(p.revisions) || 1,
+      }))
+    if (cleaned.length > 0) await db.createPackages(post.id, cleaned)
+  }
 
   return NextResponse.json({ ok: true, data: post }, { status: 201 })
 }

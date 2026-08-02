@@ -1,5 +1,8 @@
 'use client'
-import { Post } from '@/lib/db'
+import Link from 'next/link'
+import { Post, GigPackage } from '@/lib/db'
+
+type PostWithPackages = Post & { packages?: GigPackage[] }
 
 const CATS: Record<string, { label: string; icon: string }> = {
   dev:      { label:'Developer',  icon:'💻' },
@@ -20,9 +23,11 @@ function timeAgo(value: string | Date) {
   return `${Math.floor(h/24)}d ago`
 }
 
-export default function PostCard({ post, onContact }: { post: Post; onContact: (post: Post) => void }) {
+export default function PostCard({ post, onContact, onOrder }: { post: PostWithPackages; onContact: (post: PostWithPackages) => void; onOrder?: (post: PostWithPackages) => void }) {
   const cat = CATS[post.category] || CATS.other
   const initials = (post.authorName || 'U')[0].toUpperCase()
+  const hasPackages = (post.packages?.length || 0) > 0
+  const startingPrice = hasPackages ? Math.min(...post.packages!.map(p => p.price)) / 100 : null
 
   const rateDisplay = post.rateType === 'open' ? 'Open to offers'
     : post.rateType === 'hide' ? 'Rate on request'
@@ -66,22 +71,28 @@ export default function PostCard({ post, onContact }: { post: Post; onContact: (
 
       {/* Body */}
       <div style={{ padding:20, flex:1, display:'flex', flexDirection:'column' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+        <Link
+          href={`/creator/${post.authorId}`}
+          onClick={e => e.stopPropagation()}
+          style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, textDecoration:'none', color:'inherit' }}
+        >
           <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--bg-elevated)', border:'1.5px solid var(--border-gold)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--display)', fontSize:14, color:'var(--gold)', flexShrink:0 }}>
             {initials}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{post.authorName}</div>
+            <div className="post-card-author-name" style={{ fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', transition:'color .2s' }}>{post.authorName}</div>
             <div style={{ fontFamily:'var(--mono)', fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:.5 }}>{post.authorRole}</div>
           </div>
           <div style={{ fontFamily:'var(--mono)', fontSize:9, color:'var(--text-muted)', whiteSpace:'nowrap' }}>{timeAgo(post.createdAt)}</div>
-        </div>
+        </Link>
 
         <div style={{ fontSize:15, fontWeight:600, marginBottom:8, lineHeight:1.4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>{post.title}</div>
         <div style={{ fontSize:13, color:'var(--text-dim)', lineHeight:1.6, flex:1, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden', marginBottom:16 }}>{post.description}</div>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:14, borderTop:'1px solid var(--border)', marginTop:'auto' }}>
-          <span style={{ fontFamily:'var(--mono)', fontSize:11, color:rateColor, fontWeight:700 }}>{rateDisplay}</span>
+          <span style={{ fontFamily:'var(--mono)', fontSize:11, color: hasPackages ? 'var(--green)' : rateColor, fontWeight:700 }}>
+            {hasPackages ? `From $${startingPrice}` : rateDisplay}
+          </span>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             {post.link && (
               <a href={post.link} target="_blank" rel="noopener noreferrer"
@@ -92,13 +103,21 @@ export default function PostCard({ post, onContact }: { post: Post; onContact: (
                 ↗ View
               </a>
             )}
-            <button onClick={e => { e.stopPropagation(); onContact(post) }}
-              style={{ padding:'7px 14px', background:'var(--gold-dim)', border:'1px solid var(--border-gold)', borderRadius:'var(--r)', fontFamily:'var(--mono)', fontSize:9, letterSpacing:1, textTransform:'uppercase', color:'var(--gold)', cursor:'pointer', transition:'all .2s' }}>
-              ✉ Contact
-            </button>
+            {hasPackages && onOrder ? (
+              <button onClick={e => { e.stopPropagation(); onOrder(post) }}
+                style={{ padding:'7px 14px', background:'var(--gold)', border:'1px solid var(--gold)', borderRadius:'var(--r)', fontFamily:'var(--mono)', fontSize:9, letterSpacing:1, textTransform:'uppercase', color:'#1A1815', fontWeight:700, cursor:'pointer', transition:'all .2s' }}>
+                Order Now
+              </button>
+            ) : (
+              <button onClick={e => { e.stopPropagation(); onContact(post) }}
+                style={{ padding:'7px 14px', background:'var(--gold-dim)', border:'1px solid var(--border-gold)', borderRadius:'var(--r)', fontFamily:'var(--mono)', fontSize:9, letterSpacing:1, textTransform:'uppercase', color:'var(--gold)', cursor:'pointer', transition:'all .2s' }}>
+                ✉ Contact
+              </button>
+            )}
           </div>
         </div>
       </div>
+      <style>{`.post-card-author-name:hover { color: var(--gold) !important; }`}</style>
     </div>
   )
 }

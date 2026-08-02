@@ -65,9 +65,20 @@ model User {
   role          String    @default("merchant") // 'merchant' | 'admin'
   createdAt     DateTime  @default(now())
 
+  // Cached seller reputation stats — updated whenever a review is created,
+  // so we don't have to aggregate reviews on every page load.
+  avgRating       Float? 
+  reviewCount     Int    @default(0)
+  completedOrders Int    @default(0)
+
   accounts Account[]
   sessions Session[]
   posts    Post[]
+
+  ordersAsBuyer  Order[] @relation("BuyerOrders")
+  ordersAsSeller Order[] @relation("SellerOrders")
+  reviewsWritten Review[] @relation("ReviewAuthor")
+  reviewsAbout   Review[] @relation("ReviewTarget")
 
   @@map("users")
 }
@@ -79,7 +90,7 @@ model Post {
   category     String // 'dev' | 'design' | 'engineer' | 'video' | '3d' | 'other'
   images       String[] @default([])
   link         String   @default("")
-  rate         String   @default("")
+  rate         String   @default("") // legacy freeform rate, kept for older posts without packages
   rateType     String   @default("hourly") // 'hourly' | 'project' | 'open' | 'hide'
   authorId     String
   authorName   String
@@ -88,10 +99,72 @@ model Post {
   createdAt    DateTime @default(now())
   views        Int      @default(0)
 
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   messages Message[]
+  packages GigPackage[]
+  orders   Order[]
 
   @@map("posts")
+}
+
+// A gig can have up to 3 tiers: basic / standard / premium — same idea as
+// Fiverr's package system. Not every post needs all 3.
+model GigPackage {
+  id            String @id @default(cuid())
+  postId        String
+  tier          String // 'basic' | 'standard' | 'premium'
+  title         String
+  description   String
+  price         Int    // stored in cents to avoid floating point issues
+  deliveryDays  Int
+  revisions     Int    @default(1)
+
+  post   Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([postId, tier])
+  @@map("gig_packages")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  postId          String
+  packageId       String
+  buyerId         String
+  sellerId        String
+  tier            String
+  price           Int      // snapshot of package price at time of purchase, in cents
+  status          String   @default("pending") // pending | in_progress | delivered | completed | cancelled | disputed
+  requirements    String?  // buyer's brief/instructions submitted at checkout
+  deliveryNote    String?  // seller's message when marking delivered
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+  deliveredAt     DateTime?
+  completedAt     DateTime?
+
+  post    Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  package GigPackage @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  buyer   User       @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller  User       @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
+  review  Review?
+
+  @@map("orders")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  authorId  String   // the buyer
+  targetId  String   // the seller being reviewed
+  rating    Int      // 1-5
+  comment   String
+  createdAt DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User  @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target User  @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
 }
 
 model Message {
