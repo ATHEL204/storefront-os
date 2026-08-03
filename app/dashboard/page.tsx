@@ -192,7 +192,7 @@ export default function Dashboard() {
                   { id:'profile', icon:'👤', label:'Profile' },
                 ].map(item => (
                   <button key={item.id} onClick={() => setPanel(item.id)}
-                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:'var(--r)', fontFamily:'var(--mono)', fontSize:10, letterSpacing:.5, textTransform:'uppercase', color:panel===item.id?'var(--gold)':'var(--text-dim)', background:panel===item.id?'var(--gold-dim)':'none', border:panel===item.id?'1px solid var(--border-gold)':'1px solid transparent', cursor:'pointer', transition:'all .2s', textAlign:'left' }}>
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:'var(--r)', fontFamily:'var(--mono)', fontSize:10, letterSpacing:.5, textTransform:'uppercase', color:panel===item.id?'var(--gold)':'var(--text-dim)', background:panel===item.id?'var(--gold-dim)':'none', border:panel===item.id?'1px solid var(--border-gold)':'1px solid transparent', borderLeft: panel===item.id ? '3px solid var(--gold)' : '3px solid transparent', cursor:'pointer', transition:'all .2s', textAlign:'left' }}>
                     <span>{item.icon}</span>{item.label}
                     {item.badge && <span style={{ marginLeft:'auto', background:'var(--gold)', color:'#1A1815', borderRadius:10, padding:'1px 7px', fontSize:9, fontWeight:700 }}>{item.badge}</span>}
                   </button>
@@ -216,47 +216,111 @@ export default function Dashboard() {
             <div>
               {panel === 'overview' && (
                 <div>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
-                    <h2 style={{ fontFamily:'var(--display)', fontSize:32, letterSpacing:2 }}>OVERVIEW</h2>
-                    <button className="btn btn-gold btn-sm" onClick={() => setShowCreate(true)}>+ New Post</button>
+                  {/* Greeting header */}
+                  <div style={{ marginBottom:28 }}>
+                    <div style={{ fontFamily:'var(--mono)', fontSize:10, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:6 }}>
+                      {new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+                      <h2 style={{ fontFamily:'var(--display)', fontSize:'clamp(28px,3vw,40px)', letterSpacing:1 }}>
+                        {(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening' })()}, {(user?.name || '').split(' ')[0]}
+                      </h2>
+                      <button className="btn btn-gold btn-sm" onClick={() => setShowCreate(true)}>+ New Post</button>
+                    </div>
                   </div>
 
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }} className="overview-stats-grid">
-                    {[
-                      { num: `$${earnings.toFixed(0)}`, label:'Total Earnings', accent:'var(--green)' },
-                      { num: posts.length, label:'Your Posts', accent:'var(--gold)' },
-                      { num: posts.reduce((s,p)=>s+p.views,0), label:'Total Views', accent:'var(--gold)' },
-                      { num: profileStats?.avgRating ? profileStats.avgRating.toFixed(1) : '—', label:`Rating (${profileStats?.reviewCount || 0})`, accent:'var(--electric)' },
-                    ].map(s => (
-                      <div key={s.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:20 }}>
-                        <div style={{ fontFamily:'var(--display)', fontSize:34, letterSpacing:1, color:s.accent, lineHeight:1 }}>{s.num}</div>
-                        <div style={{ fontFamily:'var(--mono)', fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:1, marginTop:6 }}>{s.label}</div>
+                  {/* Hero earnings card */}
+                  <div style={{
+                    background:'linear-gradient(135deg, var(--bg-card), var(--bg-elevated))',
+                    border:'1px solid var(--border-gold)', borderRadius:'var(--r-lg)', padding:'28px 28px',
+                    marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:20,
+                    position:'relative', overflow:'hidden',
+                  }}>
+                    <div style={{ position:'absolute', top:-60, right:-60, width:220, height:220, background:'radial-gradient(circle, rgba(201,168,76,0.10) 0%, transparent 70%)', pointerEvents:'none' }} />
+                    <div>
+                      <div style={{ fontFamily:'var(--mono)', fontSize:9, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:6 }}>Total Earnings</div>
+                      <div style={{ fontFamily:'var(--display)', fontSize:52, letterSpacing:1, color:'var(--gold)', lineHeight:1 }}>${earnings.toFixed(0)}</div>
+                      <div style={{ fontSize:12, color:'var(--text-dim)', marginTop:8 }}>
+                        {sellerOrders.filter(o=>o.status==='completed').length} completed order{sellerOrders.filter(o=>o.status==='completed').length !== 1 ? 's' : ''} as a seller
                       </div>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-elevated)', border:`1px solid ${level.color}`, borderRadius:'var(--r-lg)', padding:'14px 20px' }}>
+                      <div style={{ fontSize:24 }}>🏆</div>
+                      <div>
+                        <div style={{ fontFamily:'var(--mono)', fontSize:10, letterSpacing:1, textTransform:'uppercase', color:level.color, fontWeight:700 }}>{level.label}</div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)' }}>★ {formatRating(profileStats?.avgRating ?? null, profileStats?.reviewCount || 0)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stat cards with icons */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:24 }} className="overview-stats-grid">
+                    {[
+                      { icon:'📁', num: posts.length, label:'Active Posts', accent:'var(--gold)' },
+                      { icon:'👁', num: posts.reduce((s,p)=>s+p.views,0), label:'Total Views', accent:'var(--electric)' },
+                      { icon:'⏳', num: pendingSellerOrders, label:'Orders Awaiting You', accent: pendingSellerOrders > 0 ? 'var(--red)' : 'var(--text-muted)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:20, display:'flex', alignItems:'center', gap:14 }}>
+                        <div style={{ width:44, height:44, borderRadius:'var(--r)', background:'var(--bg-elevated)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{s.icon}</div>
+                        <div>
+                          <div style={{ fontFamily:'var(--display)', fontSize:26, letterSpacing:1, color:s.accent, lineHeight:1 }}>{s.num}</div>
+                          <div style={{ fontFamily:'var(--mono)', fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:1, marginTop:4 }}>{s.label}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Quick actions */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:28 }} className="overview-stats-grid">
+                    {[
+                      { icon:'✦', label:'Post New Work', desc:'Add a portfolio piece or gig', onClick: () => setShowCreate(true) },
+                      { icon:'🛒', label:'View Orders', desc:'Manage buying & selling', onClick: () => setPanel('orders') },
+                      { icon:'🌍', label:'Public Profile', desc:'See how others view you', onClick: () => router.push(`/creator/${(user as any)?.id}`) },
+                    ].map(a => (
+                      <button key={a.label} onClick={a.onClick} style={{ textAlign:'left', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:18, cursor:'pointer', transition:'all .2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor='var(--border-gold)'; e.currentTarget.style.transform='translateY(-2px)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.transform='' }}>
+                        <div style={{ fontSize:20, marginBottom:8 }}>{a.icon}</div>
+                        <div style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{a.label}</div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)' }}>{a.desc}</div>
+                      </button>
                     ))}
                   </div>
 
                   {/* Recent activity */}
                   <div style={{ marginBottom:24 }}>
-                    <h3 style={{ fontFamily:'var(--mono)', fontSize:10, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)', marginBottom:12 }}>Recent Activity</h3>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                      <h3 style={{ fontFamily:'var(--mono)', fontSize:10, letterSpacing:2, textTransform:'uppercase', color:'var(--text-muted)' }}>Recent Activity</h3>
+                      {recentActivity.length > 0 && <button onClick={() => setPanel('orders')} style={{ background:'none', border:'none', color:'var(--gold)', fontFamily:'var(--mono)', fontSize:10, letterSpacing:.5, textTransform:'uppercase', cursor:'pointer' }}>View all →</button>}
+                    </div>
                     {ordersLoading && !ordersLoadedOnce ? (
                       <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:20, color:'var(--text-muted)', fontFamily:'var(--mono)', fontSize:11 }}>LOADING...</div>
                     ) : recentActivity.length === 0 ? (
-                      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:20, color:'var(--text-muted)', fontSize:13 }}>
-                        No orders yet. Sell a gig or hire someone to see activity here.
+                      <div style={{ background:'var(--bg-card)', border:'1px dashed var(--border)', borderRadius:'var(--r-lg)', padding:'32px 20px', textAlign:'center' }}>
+                        <div style={{ fontSize:28, opacity:.3, marginBottom:8 }}>🛒</div>
+                        <div style={{ color:'var(--text-muted)', fontSize:13 }}>No orders yet. Sell a gig or hire someone to see activity here.</div>
                       </div>
                     ) : (
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {recentActivity.map(o => {
                           const asSeller = sellerOrders.some(so => so.id === o.id)
+                          const STATUS_COLORS: Record<string,string> = {
+                            pending:'var(--text-muted)', in_progress:'var(--electric)', delivered:'var(--gold)',
+                            completed:'var(--green)', cancelled:'var(--red)', disputed:'var(--red)',
+                          }
                           return (
-                            <div key={o.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r)', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-                              <div style={{ minWidth:0 }}>
+                            <div key={o.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--r)', padding:'12px 16px', display:'flex', alignItems:'center', gap:14 }}>
+                              <div style={{ width:44, height:44, borderRadius:'var(--r)', background:'var(--bg-elevated)', flexShrink:0, overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                {o.post?.images?.[0] ? <img src={o.post.images[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <span style={{ fontSize:18 }}>{CATS[o.post?.category] || '📦'}</span>}
+                              </div>
+                              <div style={{ minWidth:0, flex:1 }}>
                                 <div style={{ fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.post?.title}</div>
-                                <div style={{ fontFamily:'var(--mono)', fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:.5 }}>
-                                  {asSeller ? 'Sold' : 'Bought'} · {o.status.replace('_',' ')}
+                                <div style={{ fontFamily:'var(--mono)', fontSize:9, textTransform:'uppercase', letterSpacing:.5 }}>
+                                  <span style={{ color:'var(--text-muted)' }}>{asSeller ? 'Sold' : 'Bought'} · </span>
+                                  <span style={{ color: STATUS_COLORS[o.status] }}>{o.status.replace('_',' ')}</span>
                                 </div>
                               </div>
-                              <div style={{ fontFamily:'var(--display)', fontSize:16, color:'var(--gold)', flexShrink:0 }}>${(o.price/100).toFixed(0)}</div>
+                              <div style={{ fontFamily:'var(--display)', fontSize:18, color:'var(--gold)', flexShrink:0 }}>${(o.price/100).toFixed(0)}</div>
                             </div>
                           )
                         })}
